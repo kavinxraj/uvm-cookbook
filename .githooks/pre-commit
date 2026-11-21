@@ -1,0 +1,3 @@
+#!/bin/sh
+# Fast QC before every commit (see WORKFLOW.md). Full QC runs in the FEEDBACK stage.
+exec python3 "$(git rev-parse --show-toplevel)/tools/qc.py" --fast

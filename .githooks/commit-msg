@@ -1,0 +1,3 @@
+#!/bin/sh
+# Refuse a commit unless it names a step (trailer "Step: <ID>") whose staged state is pass.
+exec python3 "$(git rev-parse --show-toplevel)/tools/step.py" check-commit "$1"

@@ -1,0 +1,23 @@
+# Tools and generated output
+.venv/
+tools/bin/
+.qc/
+site/
+build/
+__pycache__/
+
+# Simulator output
+xcelium.d/
+xrun.history
+xrun.log
+xrun.key
+*.shm/
+*.vcd
+*.fst
+waves/
+cov_work/
+INCA_libs/
+obj_dir/
+
+# Local machine settings (paths, licenses): never committed
+flow/env.local.sh
