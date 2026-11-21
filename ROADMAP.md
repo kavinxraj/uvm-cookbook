@@ -54,6 +54,9 @@ Every example from 01 onward is built with the same sub-steps. A phase lists the
 
 ## Phase 0: Foundation
 
+Step IDs are fixed once given. Execution order for Phase 0: P0.1, P0.9, P0.2, P0.8, P0.3,
+P0.4, P0.5, P0.6, P0.7.
+
 | ID | Step | Deliverables | Gates |
 |---|---|---|---|
 | P0.1 | Repository, workflow, QC harness | `README.md`, `CLAUDE.md`, `WORKFLOW.md`, `ROADMAP.md`, `PLAN.md`, `tools/step.py`, `tools/qc.py`, `tools/setup.sh`, git hooks, `.gitignore`, step template | `qc.py` runs; hooks refuse a commit without a passed step |
@@ -63,6 +66,8 @@ Every example from 01 onward is built with the same sub-steps. A phase lists the
 | P0.5 | Open-source track | Verilator lint rules, RTL-only smoke harness (Icarus/Verilator), evaluation of a newer Verilator for UVM; decision recorded | Lint runs in `qc.py`; decision recorded in the step file |
 | P0.6 | Public hygiene and CI | `LICENSE` (to decide: code and docs licenses), `CONTRIBUTING.md`, GitHub Actions running open-source QC + site build, check that committed xrun results match the current source hash | CI green on a branch; stale results detected |
 | P0.7 | Style guide | `docs/reference/style.md`: file headers, naming (`i_`/`o_`), package/include rules, report IDs, verbosity policy; `qc.py` enforces headers | Header check covers all `.sv` files |
+| P0.8 | Diagram pipeline: Mermaid to draw.io | `tools/mmd2drawio.py` (layout from mermaid-cli, native draw.io shapes), export to `<name>.drawio.svg`, hand-tuned diagrams protected, QC warning when a `.mmd` changes after its draw.io copy was tuned | A sample `.mmd` converts to editable shapes; an edited copy is not overwritten |
+| P0.9 | Decision records and sandbox | `decisions/` template and README, `sandbox/` (git-ignored), `WORKFLOW.md` section 6, `step.py decision`, QC `decisions` check | A record with a missing section fails QC; a step linked to an open record cannot leave DISCUSS |
 
 ## Phase 1: Example 00, and_gate (single agent, combinational, timing)
 

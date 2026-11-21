@@ -21,3 +21,7 @@ obj_dir/
 
 # Local machine settings (paths, licenses): never committed
 flow/env.local.sh
+
+# Sandbox trials (only the README is tracked)
+sandbox/*
+!sandbox/README.md

@@ -23,6 +23,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 STEPS = ROOT / "steps"
 TEMPLATE = STEPS / "_template.md"
+DECISIONS = ROOT / "decisions"
+DR_SECTIONS = ["Context", "Criteria", "Options", "Evidence", "Scoring",
+               "Recommendation", "Decision", "Revisit if"]
+DR_STATES = ["proposed", "criteria-agreed", "evaluated", "accepted", "superseded"]
 
 STATES = ["plan", "discuss", "refine", "implement", "feedback", "pass", "fail"]
 MOVES = {  # transitions allowed with `move`; pass/fail only via `review`
@@ -86,8 +90,51 @@ def cmd_move(a):
     if a.to not in MOVES.get(cur, []):
         allowed = ", ".join(MOVES.get(cur, [])) or "none (use `review` from feedback)"
         sys.exit(f"step {a.id}: cannot move {cur} -> {a.to}. Allowed: {allowed}")
+    if cur == "discuss":
+        open_drs = [d for d in re.findall(r"Decision: (DR-\d{3})", text)
+                    if dr_meta(d).get("status") != "accepted"]
+        if open_drs:
+            sys.exit(f"step {a.id}: decision(s) not accepted yet: {', '.join(sorted(set(open_drs)))}")
     write_state(a.id, text, a.to, a.note or "")
     print(f"{a.id}: {cur} -> {a.to}")
+
+
+def dr_files():
+    return sorted(DECISIONS.glob("DR-[0-9][0-9][0-9]-*.md"))
+
+
+def dr_meta(did):
+    for f in dr_files():
+        if f.name.startswith(did + "-"):
+            m = re.match(r"^---\n(.*?)\n---\n", f.read_text(), re.S)
+            if m:
+                return {k.strip(): v.strip() for k, v in
+                        (l.split(":", 1) for l in m.group(1).splitlines() if ":" in l)}
+    return {}
+
+
+def cmd_decision_new(a):
+    if not ID_RE.match(a.step):
+        sys.exit("step ID must look like P0.2")
+    n = max([int(f.name[3:6]) for f in dr_files()] or [0]) + 1
+    did = f"DR-{n:03d}"
+    slug = re.sub(r"[^a-z0-9]+", "-", a.title.lower()).strip("-")
+    path = DECISIONS / f"{did}-{slug}.md"
+    text = (DECISIONS / "_template.md").read_text()
+    for k, v in {"ID": did, "TITLE": a.title, "STEP": a.step,
+                 "DATE": dt.date.today().isoformat()}.items():
+        text = text.replace("{{" + k + "}}", v)
+    path.write_text(text)
+    print(f"created {path.relative_to(ROOT)}; add 'Decision: {did}' to steps/{a.step}.md Discussion")
+
+
+def cmd_decision_list(a):
+    print(f"{'ID':<8} {'STATUS':<16} {'STEP':<6} TITLE")
+    for f in dr_files():
+        m = dr_meta(f.name[:6])
+        print(f"{f.name[:6]:<8} {m.get('status', '?'):<16} {m.get('step', '?'):<6} {m.get('title', '')}")
+    if not dr_files():
+        print("(no decision records yet)")
 
 
 def cmd_qc(a):
@@ -196,6 +243,10 @@ def main():
     s.add_argument("--by"); s.add_argument("--notes"); s.add_argument("--override")
     s.set_defaults(fn=cmd_review)
     s = sub.add_parser("status"); s.set_defaults(fn=cmd_status)
+    d = sub.add_parser("decision").add_subparsers(dest="dcmd", required=True)
+    s = d.add_parser("new"); s.add_argument("step"); s.add_argument("title")
+    s.set_defaults(fn=cmd_decision_new)
+    s = d.add_parser("list"); s.set_defaults(fn=cmd_decision_list)
     s = sub.add_parser("check-commit"); s.add_argument("msgfile"); s.set_defaults(fn=cmd_check_commit)
     a = ap.parse_args()
     sys.exit(a.fn(a) or 0)

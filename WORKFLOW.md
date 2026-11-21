@@ -51,6 +51,8 @@ python3 tools/step.py qc P1.3                # tool feedback round (runs tools/q
 python3 tools/step.py review P1.3 --verdict pass --by "<reviewer>" --notes "..."
 python3 tools/qc.py                          # run QC alone (no step file change)
 python3 tools/qc.py --fast                   # quick checks only (used by the pre-commit hook)
+python3 tools/step.py decision new P0.2 "Documentation site generator"
+python3 tools/step.py decision list
 ```
 
 ## 4. Allowed state transitions
@@ -74,3 +76,27 @@ Each step file carries this list; steps add their own items.
 - [ ] Is it clear to a reader who starts at this page?
 - [ ] Is every checker proven by a mutant (if the step adds checkers)?
 - [ ] Are the follow-ups recorded?
+
+## 6. Making a choice: decision records
+
+Any choice that is hard to reverse, or affects more than one step, gets a decision record
+in `decisions/` (template: `decisions/_template.md`). Small choices stay in the step's
+Discussion table.
+
+```
+open DR ─► agree criteria + weights ─► shortlist ─► trials in sandbox/ ─► evidence
+        ─► score ─► recommendation ─► owner decides ─► DR accepted ─► step continues
+```
+
+| Stage | Rule |
+|---|---|
+| Criteria | Agreed with the owner before any option is scored. Status becomes `criteria-agreed`. |
+| Shortlist | Options with pros and cons; options dropped early are listed with the reason. |
+| Trials | In `sandbox/<DR>/<option>/`, git-ignored. Same sample content for every option. Time-boxed in advance. |
+| Evidence | Trial results are marked _(trial)_; claims from reading are marked _(read, source, date)_. |
+| Scoring | Weight x score per criterion. Status becomes `evaluated`. |
+| Decision | Only the owner decides; recorded in their words with the date. Status becomes `accepted`. |
+| Revisit | Conditions that reopen the decision. A new DR may supersede an old one. |
+
+A step that links a DR (trailer-style line `Decision: DR-NNN` in its Discussion table)
+cannot move past DISCUSS until that DR is `accepted`. QC checks every DR has all sections.

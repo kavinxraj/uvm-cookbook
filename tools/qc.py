@@ -19,7 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 EXTRA_PATH = [ROOT / ".venv" / "bin", ROOT / "tools" / "bin"]
-EXCLUDE = {".git", ".venv", "site", ".qc", "tools/bin", "build", "results"}
+EXCLUDE = {".git", ".venv", "site", ".qc", "tools/bin", "build", "results", "sandbox"}
 
 
 def which(tool):
@@ -65,6 +65,31 @@ def chk_steps():
             bad.append(f"{p.name}: bad state")
     n = len(files("steps/P*.md"))
     return ("FAIL", "; ".join(bad)) if bad else ("PASS", f"{n} step file(s) valid")
+
+
+def chk_decisions():
+    sections = ["Context", "Criteria", "Options", "Evidence", "Scoring",
+                "Recommendation", "Decision", "Revisit if"]
+    states = {"proposed", "criteria-agreed", "evaluated", "accepted", "superseded"}
+    drs = [p for p in files("decisions/DR-*.md")]
+    if not drs:
+        return "SKIP", "no decision records yet"
+    bad = []
+    for p in drs:
+        t = p.read_text()
+        m = re.match(r"^---\n(.*?)\n---\n", t, re.S)
+        meta = {k.strip(): v.strip() for k, v in
+                (l.split(":", 1) for l in (m.group(1).splitlines() if m else []) if ":" in l)}
+        if not re.match(r"^DR-\d{3}$", meta.get("id", "")) or not p.name.startswith(meta.get("id", "?") + "-"):
+            bad.append(f"{p.name}: id")
+        if meta.get("status") not in states:
+            bad.append(f"{p.name}: status")
+        missing = [s for s in sections if not re.search(rf"^## {re.escape(s)}\s*$", t, re.M)]
+        if missing:
+            bad.append(f"{p.name}: missing {', '.join(missing)}")
+        if meta.get("status") == "accepted" and re.search(r"^## Decision\s*\n\s*\n_Owner", t, re.M):
+            bad.append(f"{p.name}: accepted but Decision empty")
+    return ("FAIL", "; ".join(bad[:5])) if bad else ("PASS", f"{len(drs)} record(s)")
 
 
 def chk_headers():
@@ -162,7 +187,7 @@ def chk_private():
     return ("FAIL", "; ".join(hits[:5])) if hits else ("PASS", "no private data patterns")
 
 
-FAST = [("steps", chk_steps), ("private", chk_private), ("headers", chk_headers),
+FAST = [("steps", chk_steps), ("decisions", chk_decisions), ("private", chk_private), ("headers", chk_headers),
         ("python", chk_python), ("spell", chk_spell), ("yaml", chk_yaml)]
 FULL = FAST + [("lint-rtl", chk_lint_rtl), ("lint-sv", chk_lint_sv), ("docs", chk_docs)]
 
